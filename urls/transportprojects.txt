@@ -16,6 +16,7 @@ https://www.transportprojects.org.nz/current/evans-bay/greta-point-to-cobham-dri
 https://www.transportprojects.org.nz/current/evans-bay/greta-point-to-cobham-drive/proposed-changes/proposed-parking-changes
 https://www.transportprojects.org.nz/current/bikenetwork/the-network
 https://www.transportprojects.org.nz/current/the-parade/proposal-details
+https://www.transportprojects.org.nz/current/botanic-garden-to-city/project-details
 https://www.transportprojects.org.nz/current/newtown-to-city/project-details
 https://www.transportprojects.org.nz/current/shelly-bay-road/what-we-know
 https://www.transportprojects.org.nz/current/aro-valley-connection/how-were-rolling-out-changes
@@ -32,7 +33,6 @@ https://www.transportprojects.org.nz/current/berhampore-to-newtown-bus-and-bike-
 https://www.transportprojects.org.nz/why/strategic-direction
 https://www.transportprojects.org.nz/new-parking-scheme-details
 https://www.transportprojects.org.nz/current/ngaio-connection/ngaio-connections
-https://www.transportprojects.org.nz/current/botanic-garden-to-city/latest-updates
 https://www.transportprojects.org.nz/current/wadestown-connections/new-wadestown-parking-scheme
 https://www.transportprojects.org.nz/current/wadestown-connections/new-wadestown-parking-scheme/how-the-permits-work
 https://www.transportprojects.org.nz/current/wadestown-connections/bike-connection/wadestown-connections-wadestown-road
@@ -55,7 +55,6 @@ https://www.transportprojects.org.nz/current/cobham-drive/details-of-whats-chang
 https://www.transportprojects.org.nz/current/hutt-road/kaiwharawhara-bridge-construction-details
 https://www.transportprojects.org.nz/current/evans-bay/greta-point-to-cobham-drive/proposed-changes/thank-you
 https://www.transportprojects.org.nz/current/bikenetwork/background-documents
-https://www.transportprojects.org.nz/current/botanic-garden-to-city/project-details
 https://www.transportprojects.org.nz/current/shelly-bay-road/considerations-and-constraints-page
 https://www.transportprojects.org.nz/current/ngaio-connection/project-details-2
 https://www.transportprojects.org.nz/current/thorndon-connections/what-we-consulted-on/north-of-aitken-street
@@ -74,6 +73,7 @@ https://www.transportprojects.org.nz/current/brooklyn-connections/brooklyn-conne
 https://www.transportprojects.org.nz/current/thorndon-quay/project-details
 https://www.transportprojects.org.nz/current/aotea-quay
 https://www.transportprojects.org.nz/current/aotea-quay/supporting-documents
+https://www.transportprojects.org.nz/current/botanic-garden-to-city/latest-updates
 https://www.transportprojects.org.nz/current/wadestown-connections/bike-connection
 https://www.transportprojects.org.nz/current/wadestown-connections/new-wadestown-parking-scheme/other-types-of-parking
 https://www.transportprojects.org.nz/current/wadestown-connections/bike-connection/blackbridge-road
@@ -184,7 +184,6 @@ https://www.transportprojects.org.nz/search
 https://www.transportprojects.org.nz/current/te-motu-kairangi-connections/miramar-connections/park-road
 https://www.transportprojects.org.nz/current/kilbirnie-connections/previous-kilbirnie-projects/rongotai-road-town-centre
 https://www.transportprojects.org.nz/current/botanic-garden-to-city
-https://www.transportprojects.org.nz/current/botanic-garden-to-city/thank-you
 https://www.transportprojects.org.nz/current/kilbirnie-connections/previous-kilbirnie-projects/tirangi-road
 https://www.transportprojects.org.nz/cycle-data
 https://www.transportprojects.org.nz/current/brooklyn-connections
