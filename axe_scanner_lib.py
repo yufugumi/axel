@@ -71,7 +71,15 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
                     await asyncio.sleep(2)
    
                     # Run accessibility tests
-                    result = await axe.run(page)
+                    result = await axe.run(
+                        page, 
+                        options={
+                            "runOnly": {
+                                "type": "tag",
+                                "values": ["wcag22aa"]  
+                            }
+                        }
+                    )
                     
                     if result.get('violations'):
                         progress_bar.write(f"{len(result['violations'])} violations found on {url}")
