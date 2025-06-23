@@ -161,7 +161,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: letstalk-a11y-reports
+          name: letstalk-a11y-reports-${{ env.SCAN_TIMESTAMP }}
           path: reports/accessibility-report-lets-talk-*.html
           retention-days: 30
 
@@ -231,6 +231,14 @@ jobs:
           timeout_minutes: 420
           max_attempts: 2
           command: python axe-scanner.py --site transportprojects
+
+      - name: Upload transportprojects scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: transportprojects-a11y-reports-${{ env.SCAN_TIMESTAMP }}
+          path: reports/transportprojects-report-*.html
+          retention-days: 30
 
       - name: Commit transportprojects.org.nz changes
         run: |
@@ -303,7 +311,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: archives-a11y-reports
+          name: archives-a11y-reports-${{ env.SCAN_TIMESTAMP }}
           path: reports/accessibility-report-archives-online-*.html
           retention-days: 30
 
@@ -371,7 +379,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tutuki-accessibility-results
+          name: tutuki-accessibility-results-${{ env.SCAN_TIMESTAMP }}
           path: reports/
           retention-days: 30
 
@@ -452,7 +460,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: careers-a11y-reports
+          name: careers-a11y-reports-${{ env.SCAN_TIMESTAMP }}
           path: reports/accessibility-report-careers-*.html
           retention-days: 30
 
@@ -503,14 +511,10 @@ jobs:
         run: |
           # Create release directory
           mkdir -p release-files
-
-          # Find the latest report files for each site
-          find all-artifacts -type f -name "*${{ env.SCAN_TIMESTAMP }}*" | while read file; do
-
-            filename=$(basename "$file" | sed "s/-${{ env.SCAN_TIMESTAMP }}//")
-            cp "$file" "release-files/$filename"
-          done
-
+          
+          # Copy all HTML reports from all artifacts
+          find all-artifacts -type f -name "*.html" -exec cp {} release-files/ \;
+          
           # List what we're about to release
           echo "Files to be released:"
           ls -la release-files/
@@ -530,6 +534,6 @@ jobs:
             - Tutuki services
             - Transport projects
             - careers.wellington.govt.nz
-          artifacts: "all-artifacts/*"
+          artifacts: "release-files/*"
           artifactErrorsFailBuild: true
           allowUpdates: true

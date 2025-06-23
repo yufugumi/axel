@@ -71,15 +71,7 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
                     await asyncio.sleep(2)
    
                     # Run accessibility tests
-                    result = await axe.run(
-                        page, 
-                        options={
-                            "runOnly": {
-                                "type": "tag",
-                                "values": ["wcag22aa"]  
-                            }
-                        }
-                    )
+                    result = await axe.run(page)
                     
                     if result.get('violations'):
                         progress_bar.write(f"{len(result['violations'])} violations found on {url}")
@@ -104,7 +96,9 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
 
 async def process_urls(urls: List[str]) -> List[Tuple[str, List[Dict]]]:
     """Process all URLs with a global progress bar."""
-    axe = Axe()
+    axe = Axe(options={
+        "tags": ["wcag22aa"]  
+    })
     results = []
     
     max_concurrent = 10  
