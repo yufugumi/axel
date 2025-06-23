@@ -512,8 +512,8 @@ jobs:
           # Create release directory
           mkdir -p release-files
 
-          # Copy all HTML reports from all artifacts
-          find all-artifacts -type f -name "*.html" -exec cp {} release-files/ \;
+          # Copy all files from downloaded artifacts (HTML reports and CSV files)
+          find all-artifacts -type f \( -name "*.html" -o -name "*.csv" \) -exec cp {} release-files/ \;
 
           # List what we're about to release
           echo "Files to be released:"
