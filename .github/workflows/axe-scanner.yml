@@ -237,7 +237,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: transportprojects-a11y-reports-${{ env.SCAN_TIMESTAMP }}
-          path: reports/transportprojects-report-*.html
+          path: reports/accessibility-report-transportprojects-*.html
           retention-days: 30
 
       - name: Commit transportprojects.org.nz changes
@@ -511,10 +511,10 @@ jobs:
         run: |
           # Create release directory
           mkdir -p release-files
-          
+
           # Copy all HTML reports from all artifacts
           find all-artifacts -type f -name "*.html" -exec cp {} release-files/ \;
-          
+
           # List what we're about to release
           echo "Files to be released:"
           ls -la release-files/
