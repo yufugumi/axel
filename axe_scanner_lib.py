@@ -71,7 +71,9 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
                     await asyncio.sleep(2)
    
                     # Run accessibility tests
-                    result = await axe.run(page)
+                    result = await axe.run(page, options={
+                        "tags": ["wcag22aa"]
+                    })
                     
                     if result.get('violations'):
                         progress_bar.write(f"{len(result['violations'])} violations found on {url}")
@@ -95,6 +97,40 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
             progress_bar.update(1) 
 
 async def process_urls(urls: List[str]) -> List[Tuple[str, List[Dict]]]:
+    """Process all URLs with a global progress bar."""
+    axe = Axe()  # Initialize without options
+    results = []
+    
+    max_concurrent = 10  
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
+        
+        try:
+            # Create a single progress bar for all URLs
+            with tqdm(total=len(urls), desc="Processing URLs") as progress_bar:
+                # Process URLs in smaller chunks to manage memory while maintaining the global progress bar
+                chunk_size = 20  # Adjust based on memory constraints
+                for i in range(0, len(urls), chunk_size):
+                    chunk = urls[i:i + chunk_size]
+                    
+                    # Create tasks for this chunk
+                    tasks = [
+                        process_url(url, browser, semaphore, axe, progress_bar) 
+                        for url in chunk
+                    ]
+                    
+                    # Wait for all tasks in this chunk to complete
+                    chunk_results = await asyncio.gather(*tasks)
+                    results.extend(chunk_results)
+                    
+                    await asyncio.sleep(2)
+                    
+        finally:
+            await browser.close()
+            
+    return results
     """Process all URLs with a global progress bar."""
     axe = Axe(options={
         "tags": ["wcag22aa"]  
