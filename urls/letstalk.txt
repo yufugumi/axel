@@ -149,6 +149,7 @@ https://www.letstalk.wellington.govt.nz/traffic-resolutions-june-2025
 https://www.letstalk.wellington.govt.nz/fire-and-smoke-nuisance-bylaw
 https://www.letstalk.wellington.govt.nz/monorgan-road-play-area-renewal
 https://www.letstalk.wellington.govt.nz/duncan-park-play-area-renewal
+https://www.letstalk.wellington.govt.nz/coastal-reserves-classifications
 https://www.letstalk.wellington.govt.nz/george-denton-park-play-area-renewal
 https://www.letstalk.wellington.govt.nz/managecityparking/what-we-heard
 https://www.letstalk.wellington.govt.nz/managecityparking/public-engagement-update
@@ -230,6 +231,7 @@ https://www.letstalk.wellington.govt.nz/coastal-reserve-management-plan/consulta
 https://www.letstalk.wellington.govt.nz/coastal-reserve-management-plan/drop-lyall-bay-surf-life-saving-club
 https://www.letstalk.wellington.govt.nz/coastal-reserve-management-plan/drop-evans-bay-yacht-club
 https://www.letstalk.wellington.govt.nz/coastal-reserve-management-plan/drop-te-awe-library
+https://www.letstalk.wellington.govt.nz/coastal-reserve-management-plan/drop-harbourside-market
 https://www.letstalk.wellington.govt.nz/crofton-downs-trails/proposed-crofton-downs-biking-and-walking-trails-survey
 https://www.letstalk.wellington.govt.nz/climate-action-info-hub/climate-adaptation/community-groups
 https://www.letstalk.wellington.govt.nz/traffic-resolutions-november-2024/survey-tr-nov-2024
@@ -266,6 +268,8 @@ https://www.letstalk.wellington.govt.nz/ltp-amendment/ltpfp-committee-meeting-fi
 https://www.letstalk.wellington.govt.nz/ltp-amendment/long-term-plan-amendment-proposals-karori-event-centre-online-event
 https://www.letstalk.wellington.govt.nz/ltp-amendment/ltpfp-committee-meeting-deliberation-ltp-amendment-and-202526-annual-plan
 https://www.letstalk.wellington.govt.nz/ltp-amendment/consultation-results-3002-submissions-received
+https://www.letstalk.wellington.govt.nz/ltp-amendment/LTPFP-adoption-recommendation
+https://www.letstalk.wellington.govt.nz/ltp-amendment/ltp-ap-adoption
 https://www.letstalk.wellington.govt.nz/traffic-resolutions-february-2025/traffic-resolutions-survey-february
 https://www.letstalk.wellington.govt.nz/local-alcohol-policy/briefing-councillors-introduction-lap-and-supporting-research-date
 https://www.letstalk.wellington.govt.nz/water-reform-consultation/videoaudio-submission-local-water-done-well
@@ -283,3 +287,4 @@ https://www.letstalk.wellington.govt.nz/climate-action-info-hub/Taking-climate-a
 https://www.letstalk.wellington.govt.nz/traffic-resolutions-may-2025/survey-traffic-resolutions-may-2025
 https://www.letstalk.wellington.govt.nz/traffic-resolutions-june-2025/survey-traffic-resolutions-june-2025
 https://www.letstalk.wellington.govt.nz/fire-and-smoke-nuisance-bylaw/fire-and-smoke-nuisance-bylaw-online-submission-form
+https://www.letstalk.wellington.govt.nz/coastal-reserves-classifications/classifications-survey
