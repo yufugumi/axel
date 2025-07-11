@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       scan_filter:
-        description: "Which scan(s) to run? (all, wellington, letstalk, archives, transportprojects, careers, tutuki)"
+        description: "Which scan(s) to run? (all, wellington, letstalk, archives, transportprojects, careers)"
         required: true
         default: "all"
         type: choice
@@ -21,7 +21,6 @@ on:
           - archives
           - transportprojects
           - careers
-          - tutuki
 
 jobs:
   wellington-scan:
@@ -324,74 +323,6 @@ jobs:
           git commit -m "New a11y report for archivesonline.wcc.govt.nz" || echo "No changes to commit"
           git push
 
-  tutuki-scan:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    environment: Test
-    timeout-minutes: 60
-    if: ${{ github.event.inputs.scan_filter == 'all' || github.event.inputs.scan_filter == 'tutuki' || github.event_name == 'schedule' }}
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: useblacksmith/setup-node@v5
-        with:
-          node-version: "18"
-
-      - name: Cache npm packages
-        id: npm-cache
-        uses: useblacksmith/cache@v5
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Cache Playwright for Node
-        id: playwright-node-cache
-        uses: useblacksmith/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-node-
-
-      - name: Install dependencies (from cache)
-        if: steps.npm-cache.outputs.cache-hit == 'true' && steps.playwright-node-cache.outputs.cache-hit == 'true'
-        run: |
-          echo "Using cached Node.js dependencies"
-          npm install --prefer-offline --no-audit
-          npx playwright install --with-deps
-
-      - name: Install dependencies (fresh)
-        if: steps.npm-cache.outputs.cache-hit != 'true' || steps.playwright-node-cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Installing fresh Node.js dependencies"
-          npm install @playwright/test
-          npm install @axe-core/playwright
-          npx playwright install
-          npx playwright install-deps
-
-      - name: Run Tutuki accessibility tests
-        run: npx playwright test propertySearch.spec.ts tepp.spec.ts dogReg.spec.ts
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tutuki-accessibility-results-${{ env.SCAN_TIMESTAMP }}
-          path: reports/
-          retention-days: 30
-
-      - name: Commit Tutuki results
-        run: |
-          git pull
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git add reports/
-          git commit -m "New a11y report for Tutuki services" || echo "No changes to commit"
-          git push
-
   careers-scan:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 800
@@ -482,7 +413,6 @@ jobs:
         wellington-scan,
         letstalk-scan,
         archives-online-scan,
-        tutuki-scan,
         transportprojects-scan,
         careers-scan,
       ]
@@ -534,7 +464,6 @@ jobs:
             - wellington.govt.nz
             - letstalk.wellington.govt.nz
             - Archives online
-            - Tutuki services
             - Transport projects
             - careers.wellington.govt.nz
           artifacts: "release-files/*"
