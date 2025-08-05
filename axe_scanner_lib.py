@@ -12,7 +12,7 @@ from typing import List, Dict, Tuple
 for directory in ['reports', 'logs', 'urls']:
     os.makedirs(directory, exist_ok=True)
 
-async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> Tuple[str, List[Dict]]:
+async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar, exclude_rules: List[str] = None) -> Tuple[str, List[Dict]]:
     """Process a single URL with error handling and retries."""
     max_retries = 2
     retry_count = 0
@@ -71,9 +71,11 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
                     await asyncio.sleep(2)
    
                     # Run accessibility tests
-                    result = await axe.run(page, options={
-                        "tags": ["wcag22aa"]
-                    })
+                    axe_options = {"tags": ["wcag22aa"]}
+                    if exclude_rules:
+                        axe_options["rules"] = {rule: {"enabled": False} for rule in exclude_rules}
+                    
+                    result = await axe.run(page, options=axe_options)
                     
                     if result.get('violations'):
                         progress_bar.write(f"{len(result['violations'])} violations found on {url}")
@@ -96,7 +98,7 @@ async def process_url(url: str, browser, semaphore, axe: Axe, progress_bar) -> T
         finally:
             progress_bar.update(1) 
 
-async def process_urls(urls: List[str]) -> List[Tuple[str, List[Dict]]]:
+async def process_urls(urls: List[str], exclude_rules: List[str] = None) -> List[Tuple[str, List[Dict]]]:
     """Process all URLs with a global progress bar."""
     axe = Axe()  # Initialize without options
     results = []
@@ -117,43 +119,7 @@ async def process_urls(urls: List[str]) -> List[Tuple[str, List[Dict]]]:
                     
                     # Create tasks for this chunk
                     tasks = [
-                        process_url(url, browser, semaphore, axe, progress_bar) 
-                        for url in chunk
-                    ]
-                    
-                    # Wait for all tasks in this chunk to complete
-                    chunk_results = await asyncio.gather(*tasks)
-                    results.extend(chunk_results)
-                    
-                    await asyncio.sleep(2)
-                    
-        finally:
-            await browser.close()
-            
-    return results
-    """Process all URLs with a global progress bar."""
-    axe = Axe(options={
-        "tags": ["wcag22aa"]  
-    })
-    results = []
-    
-    max_concurrent = 10  
-    semaphore = asyncio.Semaphore(max_concurrent)
-    
-    async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=True)
-        
-        try:
-            # Create a single progress bar for all URLs
-            with tqdm(total=len(urls), desc="Processing URLs") as progress_bar:
-                # Process URLs in smaller chunks to manage memory while maintaining the global progress bar
-                chunk_size = 20  # Adjust based on memory constraints
-                for i in range(0, len(urls), chunk_size):
-                    chunk = urls[i:i + chunk_size]
-                    
-                    # Create tasks for this chunk
-                    tasks = [
-                        process_url(url, browser, semaphore, axe, progress_bar) 
+                        process_url(url, browser, semaphore, axe, progress_bar, exclude_rules) 
                         for url in chunk
                     ]
                     
@@ -168,7 +134,8 @@ async def process_urls(urls: List[str]) -> List[Tuple[str, List[Dict]]]:
             
     return results
 
-async def run_accessibility_scan(url_file: str, test_name: str, log_file: str = "accessibility_scan.log"):
+
+async def run_accessibility_scan(url_file: str, test_name: str, log_file: str = "accessibility_scan.log", exclude_rules: List[str] = None):
     """Run an accessibility scan with the specified parameters."""
     # Setup logging
     full_log_path = os.path.join('logs', log_file)
@@ -193,7 +160,7 @@ async def run_accessibility_scan(url_file: str, test_name: str, log_file: str = 
     logger.info(f"Starting accessibility scan of {len(urls)} URLs")
     
     # Process all URLs with a global progress bar
-    results = await process_urls(urls)
+    results = await process_urls(urls, exclude_rules)
     
     # Read template
     with open('template.html') as f:

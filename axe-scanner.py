@@ -15,7 +15,8 @@ if __name__ == "__main__":
         'wellington': {
             'url_file': 'wellington.txt',
             'test_name': 'wellington-govt-nz',
-            'log_file': 'wellington.log'
+            'log_file': 'wellington.log',
+            'exclude_rules': ['duplicate-id-active']
         },
         'letstalk': {
             'url_file': 'letstalk.txt',
