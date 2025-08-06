@@ -34,7 +34,7 @@ class ProgressTracker {
     process.stdout.write(
       `\r[${percentage}%] ${this.current}/${
         this.total
-      } URLs processed (ETA: ${Math.round(eta / 1000)}s)`
+      } URLs processed (ETA: ${Math.round(eta / 1000)}s)`,
     );
 
     if (this.current === this.total) {
@@ -48,7 +48,7 @@ class ProgressTracker {
     // Redraw progress
     const percentage = Math.round((this.current / this.total) * 100);
     process.stdout.write(
-      `\r[${percentage}%] ${this.current}/${this.total} URLs processed`
+      `\r[${percentage}%] ${this.current}/${this.total} URLs processed`,
     );
   }
 }
@@ -65,7 +65,7 @@ export async function processUrl(
   browser: Browser,
   semaphore: { acquire: () => Promise<void>; release: () => void },
   progressBar: ProgressTracker,
-  excludeRules?: string[]
+  excludeRules?: string[],
 ): Promise<ProcessResult> {
   const maxRetries = 2;
   let retryCount = 0;
@@ -126,7 +126,7 @@ export async function processUrl(
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Run accessibility tests
-      let axeBuilder = new AxeBuilder({ page }).withTags(["wcag22aa"]);
+      let axeBuilder = new AxeBuilder({ page });
 
       if (excludeRules) {
         axeBuilder = axeBuilder.disableRules(excludeRules);
@@ -136,7 +136,7 @@ export async function processUrl(
 
       if (results.violations.length > 0) {
         progressBar.write(
-          `${results.violations.length} violations found on ${url}`
+          `${results.violations.length} violations found on ${url}`,
         );
       } else {
         progressBar.write(`No violations found on ${url}`);
@@ -147,12 +147,12 @@ export async function processUrl(
       retryCount++;
       if (retryCount <= maxRetries) {
         progressBar.write(
-          `Error on ${url}, retrying (${retryCount}/${maxRetries}): ${error}`
+          `Error on ${url}, retrying (${retryCount}/${maxRetries}): ${error}`,
         );
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } else {
         progressBar.write(
-          `Failed to process ${url} after ${maxRetries} retries: ${error}`
+          `Failed to process ${url} after ${maxRetries} retries: ${error}`,
         );
         return { url, violations: [] };
       }
@@ -170,7 +170,7 @@ export async function processUrl(
 
 export async function processUrls(
   urls: string[],
-  excludeRules?: string[]
+  excludeRules?: string[],
 ): Promise<ProcessResult[]> {
   const results: ProcessResult[] = [];
   const maxConcurrent = 10;
@@ -198,7 +198,7 @@ export async function processUrls(
       const chunk = urls.slice(i, i + chunkSize);
 
       const chunkPromises = chunk.map((url) =>
-        processUrl(url, browser, semaphore, progressBar, excludeRules)
+        processUrl(url, browser, semaphore, progressBar, excludeRules),
       );
 
       const chunkResults = await Promise.all(chunkPromises);
@@ -250,7 +250,7 @@ export async function runAccessibilityScan(config: ScanConfig): Promise<void> {
 
     const templateContent = await fs.readFile(
       "template-handlebars.html",
-      "utf-8"
+      "utf-8",
     );
     const template = Handlebars.compile(templateContent);
 
