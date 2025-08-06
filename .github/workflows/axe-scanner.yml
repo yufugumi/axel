@@ -120,9 +120,10 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install dependencies
-        run: |
-          bun install
-          bun playwright install chromium
+        run: bun install
+
+      - name: Install Playwright browsers
+        run: bunx playwright install chromium
 
       - name: Generate URLs for ${{ matrix.site }}
         run: |
