@@ -121,7 +121,6 @@ jobs:
           # First, check what versions are actually installed
           echo "=== Playwright package versions ==="
           bunx playwright --version
-          bunx playwright list
           
           # Remove any existing browser installations to prevent version conflicts
           rm -rf ~/.cache/ms-playwright
@@ -129,13 +128,14 @@ jobs:
           # Install browsers ensuring version consistency
           bunx playwright install chromium --with-deps
           
-          # Verify the installation
+          # Verify the installation using install --dry-run
           echo "=== Verifying installation ==="
-          bunx playwright list
+          bunx playwright install --dry-run chromium
           
           # Check the actual browser executable path
-          find ~/.cache/ms-playwright -name "*chromium*" -type d
-          find ~/.cache/ms-playwright -name "chrome*" -type f -executable 2>/dev/null | head -5
+          echo "=== Browser installation paths ==="
+          find ~/.cache/ms-playwright -name "*chromium*" -type d 2>/dev/null || echo "No chromium directories found"
+          find ~/.cache/ms-playwright -name "chrome*" -type f -executable 2>/dev/null | head -5 || echo "No chrome executables found"
 
       - name: Generate URLs for ${{ matrix.site }}
         run: |
