@@ -111,25 +111,31 @@ jobs:
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: bun install
+        run: |
+          # Force clean install with exact versions to prevent mismatches
+          rm -rf node_modules
+          bun install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: |
-          # Ensure version consistency and proper installation
-          echo "Current Playwright version:"
+          # First, check what versions are actually installed
+          echo "=== Playwright package versions ==="
           bunx playwright --version
+          bunx playwright list
           
-          # Clean any partial installations to prevent version mismatches
-          rm -rf ~/.cache/ms-playwright/chromium*
+          # Remove any existing browser installations to prevent version conflicts
+          rm -rf ~/.cache/ms-playwright
           
-          # Install browsers with dependencies and force reinstall
-          bunx playwright install chromium --with-deps --force
+          # Install browsers ensuring version consistency
+          bunx playwright install chromium --with-deps
           
-          # Verify the installation by listing installed browsers
-          bunx playwright install --dry-run chromium
+          # Verify the installation
+          echo "=== Verifying installation ==="
+          bunx playwright list
           
-          # Additional verification - check if the executable exists
-          ls -la ~/.cache/ms-playwright/ || echo "Playwright cache directory contents:"
+          # Check the actual browser executable path
+          find ~/.cache/ms-playwright -name "*chromium*" -type d
+          find ~/.cache/ms-playwright -name "chrome*" -type f -executable 2>/dev/null | head -5
 
       - name: Generate URLs for ${{ matrix.site }}
         run: |
