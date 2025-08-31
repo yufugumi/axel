@@ -115,10 +115,21 @@ jobs:
 
       - name: Install Playwright browsers
         run: |
-          # Always ensure browsers are properly installed with dependencies
-          bunx playwright install chromium --with-deps
-          # Verify installation was successful
+          # Ensure version consistency and proper installation
+          echo "Current Playwright version:"
+          bunx playwright --version
+          
+          # Clean any partial installations to prevent version mismatches
+          rm -rf ~/.cache/ms-playwright/chromium*
+          
+          # Install browsers with dependencies and force reinstall
+          bunx playwright install chromium --with-deps --force
+          
+          # Verify the installation by listing installed browsers
           bunx playwright install --dry-run chromium
+          
+          # Additional verification - check if the executable exists
+          ls -la ~/.cache/ms-playwright/ || echo "Playwright cache directory contents:"
 
       - name: Generate URLs for ${{ matrix.site }}
         run: |
