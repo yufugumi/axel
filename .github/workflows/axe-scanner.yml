@@ -101,15 +101,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Chromium
+      - name: Detect or install Chrome
         run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium
+          set -euo pipefail
+          CHROME_BIN=""
+          for candidate in "/usr/bin/google-chrome" "/usr/bin/google-chrome-stable" "/usr/bin/chromium" "/usr/bin/chromium-browser"; do
+            if [ -x "$candidate" ]; then
+              CHROME_BIN="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$CHROME_BIN" ]; then
+            sudo apt-get update
+            sudo apt-get install -y wget
+            wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get install -y /tmp/chrome.deb
+            CHROME_BIN="/usr/bin/google-chrome"
+          fi
+
+          echo "CHROME_PATH=$CHROME_BIN" >> $GITHUB_ENV
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.25"
           cache: true
 
       - name: Cache scanner binary
@@ -136,7 +152,7 @@ jobs:
           WAXE_FALLBACK_URLS: ${{ contains(matrix.fallback_urls, '://') && matrix.fallback_urls || '' }}
           WAXE_FALLBACK_URLS_FILE: ${{ !contains(matrix.fallback_urls, '://') && matrix.fallback_urls || '' }}
           WAXE_MAX_URLS: ${{ matrix.max_urls }}
-          CHROME_PATH: /usr/bin/chromium
+          CHROME_PATH: ${{ env.CHROME_PATH }}
 
       - name: Upload ${{ matrix.site }} scan results
         if: always()
@@ -145,7 +161,6 @@ jobs:
           name: ${{ matrix.artifact_name }}-${{ env.SCAN_TIMESTAMP }}
           path: ${{ matrix.artifact_path }}
           retention-days: 30
-
 
   create-release:
     runs-on: ubuntu-latest

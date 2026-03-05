@@ -35,6 +35,19 @@ type ProgressUpdate struct {
 // ProgressReporter receives scan progress updates.
 type ProgressReporter func(ProgressUpdate)
 
+// ScanOptions configures scanning behavior.
+type ScanOptions struct {
+	Workers       int
+	ExcludeRules  []string
+	PerURLTimeout time.Duration
+	Reporter      ProgressReporter
+	MaxRetries    int
+	RetryDelay    time.Duration
+	ChunkDelay    time.Duration
+	MaxChunkDelay time.Duration
+	BlockMedia    bool
+}
+
 // ReportData is the data structure passed to the HTML template
 type ReportData struct {
 	TestName string

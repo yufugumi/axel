@@ -112,9 +112,17 @@ func TestScanURLRetries(t *testing.T) {
 	defer server.Close()
 
 	urls := []string{server.URL}
-	results, err := ScanURLs(ctx, urls, 1, nil, DefaultPerURLTimeout)
+	results, err := ScanURLsWithOptions(ctx, urls, ScanOptions{
+		Workers:       1,
+		PerURLTimeout: DefaultPerURLTimeout,
+		MaxRetries:    2,
+		RetryDelay:    10 * time.Millisecond,
+		ChunkDelay:    0,
+		MaxChunkDelay: 0,
+		BlockMedia:    true,
+	})
 	if err != nil {
-		t.Fatalf("expected ScanURLs to succeed after retries, got error: %v", err)
+		t.Fatalf("expected ScanURLsWithOptions to succeed after retries, got error: %v", err)
 	}
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
@@ -123,5 +131,28 @@ func TestScanURLRetries(t *testing.T) {
 	observedRequests := atomic.LoadInt64(&requestCount)
 	if observedRequests != 3 {
 		t.Fatalf("expected 3 requests, got %d", observedRequests)
+	}
+}
+
+func TestScanURLsDefaultsToNoRetries(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	urls := []string{server.URL}
+	_, err := ScanURLs(ctx, urls, 1, nil, DefaultPerURLTimeout)
+	if err == nil {
+		t.Fatalf("expected error when no retries are configured")
+	}
+
+	observedRequests := atomic.LoadInt64(&requestCount)
+	if observedRequests != 1 {
+		t.Fatalf("expected 1 request, got %d", observedRequests)
 	}
 }

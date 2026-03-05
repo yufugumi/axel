@@ -50,13 +50,55 @@ func newScanCommand() *cobra.Command {
 	var sitemapURL string
 	var baseURL string
 	var timeout time.Duration
+	var workers int
+	var maxRetries int
+	var retryDelay time.Duration
+	var chunkDelay time.Duration
+	var maxChunkDelay time.Duration
 
 	cmd := &cobra.Command{
-		Use:   "scan",
+		Use:   "scan [base-url]",
 		Short: "Scan a configured site",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
+
+			var err error
+			workers, err = resolveEnvInt(cmd, "workers", "WAXE_WORKERS", workers)
+			if err != nil {
+				return err
+			}
+			maxRetries, err = resolveEnvInt(cmd, "retries", "WAXE_RETRIES", maxRetries)
+			if err != nil {
+				return err
+			}
+			retryDelay, err = resolveEnvDuration(cmd, "retry-delay", "WAXE_RETRY_DELAY", retryDelay)
+			if err != nil {
+				return err
+			}
+			chunkDelay, err = resolveEnvDuration(cmd, "chunk-delay", "WAXE_CHUNK_DELAY", chunkDelay)
+			if err != nil {
+				return err
+			}
+			maxChunkDelay, err = resolveEnvDuration(cmd, "chunk-delay-max", "WAXE_CHUNK_DELAY_MAX", maxChunkDelay)
+			if err != nil {
+				return err
+			}
+
+			positionalBaseURL := ""
+			if len(args) > 0 {
+				positionalBaseURL = strings.TrimSpace(args[0])
+			}
+			if positionalBaseURL != "" {
+				if site != "" || strings.TrimSpace(sitemapURL) != "" {
+					return fmt.Errorf("positional base URL cannot be used with --site or --sitemap-url")
+				}
+				if cmd.Flags().Changed("base-url") {
+					return fmt.Errorf("--base-url cannot be used with positional base URL")
+				}
+				return runScanFromBaseURL(ctx, positionalBaseURL, buildScanOptions(timeout, workers, maxRetries, retryDelay, chunkDelay, maxChunkDelay))
+			}
 
 			if err := validateSitemapOverrides(site, sitemapURL); err != nil {
 				return err
@@ -69,10 +111,10 @@ func newScanCommand() *cobra.Command {
 				return fmt.Errorf("site and sitemap URL cannot be used together")
 			}
 			if effectiveSitemapURL == "" {
-				return runScanFromSite(ctx, site, timeout)
+				return runScanFromSite(ctx, site, buildScanOptions(timeout, workers, maxRetries, retryDelay, chunkDelay, maxChunkDelay))
 			}
 
-			return runScanFromSitemap(ctx, effectiveSitemapURL, baseURL, timeout)
+			return runScanFromSitemap(ctx, effectiveSitemapURL, baseURL, buildScanOptions(timeout, workers, maxRetries, retryDelay, chunkDelay, maxChunkDelay))
 		},
 	}
 
@@ -80,11 +122,16 @@ func newScanCommand() *cobra.Command {
 	cmd.Flags().StringVar(&sitemapURL, "sitemap-url", "", "Sitemap URL to scan")
 	cmd.Flags().StringVar(&baseURL, "base-url", "", "Base URL for resolving relative sitemap entries")
 	cmd.Flags().DurationVar(&timeout, "timeout", scanner.DefaultPerURLTimeout, "Per-URL timeout (e.g., 30s, 1m)")
+	cmd.Flags().IntVar(&workers, "workers", 10, "Number of concurrent workers")
+	cmd.Flags().IntVar(&maxRetries, "retries", 0, "Retries per URL (0 disables retries)")
+	cmd.Flags().DurationVar(&retryDelay, "retry-delay", 2*time.Second, "Delay between retries")
+	cmd.Flags().DurationVar(&chunkDelay, "chunk-delay", 250*time.Millisecond, "Base delay between chunks")
+	cmd.Flags().DurationVar(&maxChunkDelay, "chunk-delay-max", 2*time.Second, "Maximum delay between chunks")
 
 	return cmd
 }
 
-func runScanFromSite(ctx context.Context, site string, perURLTimeout time.Duration) error {
+func runScanFromSite(ctx context.Context, site string, options scanner.ScanOptions) error {
 	siteConfig, err := loadSiteConfig(site)
 	if err != nil {
 		return err
@@ -92,10 +139,10 @@ func runScanFromSite(ctx context.Context, site string, perURLTimeout time.Durati
 
 	sitemapURL, baseURL := resolveSitemapOverrides(siteConfig, site)
 
-	return runScanWithConfig(ctx, siteConfig, sitemapURL, baseURL, perURLTimeout)
+	return runScanWithConfig(ctx, siteConfig, sitemapURL, baseURL, options)
 }
 
-func runScanFromSitemap(ctx context.Context, sitemapURL string, baseURL string, perURLTimeout time.Duration) error {
+func runScanFromSitemap(ctx context.Context, sitemapURL string, baseURL string, options scanner.ScanOptions) error {
 	resolvedSitemapURL, err := normalizeSitemapURL(sitemapURL)
 	if err != nil {
 		return err
@@ -111,10 +158,10 @@ func runScanFromSitemap(ctx context.Context, sitemapURL string, baseURL string, 
 		return err
 	}
 
-	return runScanWithConfig(ctx, siteConfig, resolvedSitemapURL, resolvedBaseURL, perURLTimeout)
+	return runScanWithConfig(ctx, siteConfig, resolvedSitemapURL, resolvedBaseURL, options)
 }
 
-func runScanWithConfig(ctx context.Context, siteConfig config.SiteConfig, sitemapURL string, baseURL string, perURLTimeout time.Duration) error {
+func runScanWithConfig(ctx context.Context, siteConfig config.SiteConfig, sitemapURL string, baseURL string, options scanner.ScanOptions) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -140,31 +187,28 @@ func runScanWithConfig(ctx context.Context, siteConfig config.SiteConfig, sitema
 		}
 	}
 
-	maxURLs, err := maxURLsFromEnv()
+	finalURLs, err := finalizeURLs(urls, "sitemap")
 	if err != nil {
 		return err
 	}
-	urls = applyMaxURLs(urls, maxURLs)
 
-	if len(urls) == 0 {
-		fallbackURLs, err := fallbackURLsFromEnv()
-		if err != nil {
-			return err
-		}
-		if len(fallbackURLs) > 0 {
-			urls = fallbackURLs
-		}
+	return runScanWithURLs(ctx, siteConfig, finalURLs, options)
+}
+
+func runScanWithURLs(ctx context.Context, siteConfig config.SiteConfig, urls []string, options scanner.ScanOptions) error {
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-	urls = applyMaxURLs(urls, maxURLs)
-
 	if len(urls) == 0 {
-		return fmt.Errorf("no URLs found from sitemap or fallback list")
+		return fmt.Errorf("no URLs available to scan")
 	}
 
 	progressReporter, stopProgress := newProgressPrinter(len(urls))
 	defer stopProgress()
 
-	results, err := scanner.ScanURLsWithProgress(ctx, urls, 10, siteConfig.ExcludeRules, perURLTimeout, progressReporter)
+	options.ExcludeRules = siteConfig.ExcludeRules
+	options.Reporter = progressReporter
+	results, err := scanner.ScanURLsWithOptions(ctx, urls, options)
 	if err != nil {
 		return err
 	}
@@ -190,6 +234,76 @@ func runScanWithConfig(ctx context.Context, siteConfig config.SiteConfig, sitema
 	}
 
 	return nil
+}
+
+func finalizeURLs(urls []string, source string) ([]string, error) {
+	maxURLs, err := maxURLsFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	urls = applyMaxURLs(urls, maxURLs)
+
+	if len(urls) == 0 {
+		fallbackURLs, err := fallbackURLsFromEnv()
+		if err != nil {
+			return nil, err
+		}
+		if len(fallbackURLs) > 0 {
+			urls = fallbackURLs
+		}
+	}
+	urls = applyMaxURLs(urls, maxURLs)
+
+	if len(urls) == 0 {
+		if source == "" {
+			source = "source"
+		}
+		return nil, fmt.Errorf("no URLs found from %s or fallback list", source)
+	}
+
+	return urls, nil
+}
+
+func buildScanOptions(timeout time.Duration, workers int, maxRetries int, retryDelay time.Duration, chunkDelay time.Duration, maxChunkDelay time.Duration) scanner.ScanOptions {
+	return scanner.ScanOptions{
+		Workers:       workers,
+		PerURLTimeout: timeout,
+		MaxRetries:    maxRetries,
+		RetryDelay:    retryDelay,
+		ChunkDelay:    chunkDelay,
+		MaxChunkDelay: maxChunkDelay,
+		BlockMedia:    true,
+	}
+}
+
+func resolveEnvInt(cmd *cobra.Command, flagName string, envKey string, current int) (int, error) {
+	if cmd.Flags().Changed(flagName) {
+		return current, nil
+	}
+	raw := strings.TrimSpace(os.Getenv(envKey))
+	if raw == "" {
+		return current, nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s value %q: %w", envKey, raw, err)
+	}
+	return value, nil
+}
+
+func resolveEnvDuration(cmd *cobra.Command, flagName string, envKey string, current time.Duration) (time.Duration, error) {
+	if cmd.Flags().Changed(flagName) {
+		return current, nil
+	}
+	raw := strings.TrimSpace(os.Getenv(envKey))
+	if raw == "" {
+		return current, nil
+	}
+	value, err := time.ParseDuration(raw)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s value %q: %w", envKey, raw, err)
+	}
+	return value, nil
 }
 
 func loadSiteConfig(site string) (config.SiteConfig, error) {

@@ -8,7 +8,7 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-func NewBrowser(ctx context.Context) (context.Context, context.CancelFunc) {
+func NewAllocator(ctx context.Context) (context.Context, context.CancelFunc) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", true),
 		chromedp.Flag("disable-gpu", true),
@@ -19,14 +19,20 @@ func NewBrowser(ctx context.Context) (context.Context, context.CancelFunc) {
 		opts = append(opts, chromedp.ExecPath(chromePath))
 	}
 
-	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
+	return chromedp.NewExecAllocator(ctx, opts...)
+}
 
-	ctx, cancel2 := chromedp.NewContext(allocCtx)
+func NewTab(ctx context.Context) (context.Context, context.CancelFunc) {
+	return chromedp.NewContext(ctx)
+}
 
-	// Return combined cancel function
-	return ctx, func() {
-		cancel2()
-		cancel()
+func NewBrowser(ctx context.Context) (context.Context, context.CancelFunc) {
+	allocCtx, allocCancel := NewAllocator(ctx)
+	tabCtx, tabCancel := NewTab(allocCtx)
+
+	return tabCtx, func() {
+		tabCancel()
+		allocCancel()
 	}
 }
 
@@ -37,14 +43,46 @@ func Navigate(ctx context.Context, url string) error {
 	)
 }
 
-func BlockAnalytics(ctx context.Context) error {
+var analyticsBlockedURLs = []string{
+	"*google-analytics.com*",
+	"*googletagmanager.com*",
+	"*googlesyndication.com*",
+	"*favicon.ico*",
+}
+
+var mediaBlockedURLs = []string{
+	"*.png*",
+	"*.jpg*",
+	"*.jpeg*",
+	"*.gif*",
+	"*.webp*",
+	"*.svg*",
+	"*.ico*",
+	"*.avif*",
+	"*.mp4*",
+	"*.webm*",
+	"*.mov*",
+	"*.m4v*",
+	"*.mp3*",
+	"*.wav*",
+	"*.ogg*",
+	"*.m4a*",
+	"*.aac*",
+}
+
+func BlockRequests(ctx context.Context, blockMedia bool) error {
+	blocked := make([]string, 0, len(analyticsBlockedURLs)+len(mediaBlockedURLs))
+	blocked = append(blocked, analyticsBlockedURLs...)
+	if blockMedia {
+		blocked = append(blocked, mediaBlockedURLs...)
+	}
+
 	return chromedp.Run(ctx,
 		network.Enable(),
-		network.SetBlockedURLs([]string{
-			"*google-analytics.com*",
-			"*googletagmanager.com*",
-			"*googlesyndication.com*",
-			"*favicon.ico*",
-		}),
+		network.SetBlockedURLs(blocked),
 	)
+}
+
+func BlockAnalytics(ctx context.Context) error {
+	return BlockRequests(ctx, false)
 }
