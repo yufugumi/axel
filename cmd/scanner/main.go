@@ -2,13 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -23,6 +26,9 @@ var nowFn = time.Now
 
 func main() {
 	if err := NewRootCommand().Execute(); err != nil {
+		if errors.Is(err, context.Canceled) {
+			os.Exit(130)
+		}
 		os.Exit(1)
 	}
 }
@@ -49,6 +55,9 @@ func newScanCommand() *cobra.Command {
 		Use:   "scan",
 		Short: "Scan a configured site",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+
 			if err := validateSitemapOverrides(site, sitemapURL); err != nil {
 				return err
 			}
@@ -60,10 +69,10 @@ func newScanCommand() *cobra.Command {
 				return fmt.Errorf("site and sitemap URL cannot be used together")
 			}
 			if effectiveSitemapURL == "" {
-				return runScanFromSite(site, timeout)
+				return runScanFromSite(ctx, site, timeout)
 			}
 
-			return runScanFromSitemap(effectiveSitemapURL, baseURL, timeout)
+			return runScanFromSitemap(ctx, effectiveSitemapURL, baseURL, timeout)
 		},
 	}
 
@@ -75,7 +84,7 @@ func newScanCommand() *cobra.Command {
 	return cmd
 }
 
-func runScanFromSite(site string, perURLTimeout time.Duration) error {
+func runScanFromSite(ctx context.Context, site string, perURLTimeout time.Duration) error {
 	siteConfig, err := loadSiteConfig(site)
 	if err != nil {
 		return err
@@ -83,10 +92,10 @@ func runScanFromSite(site string, perURLTimeout time.Duration) error {
 
 	sitemapURL, baseURL := resolveSitemapOverrides(siteConfig, site)
 
-	return runScanWithConfig(siteConfig, sitemapURL, baseURL, perURLTimeout)
+	return runScanWithConfig(ctx, siteConfig, sitemapURL, baseURL, perURLTimeout)
 }
 
-func runScanFromSitemap(sitemapURL string, baseURL string, perURLTimeout time.Duration) error {
+func runScanFromSitemap(ctx context.Context, sitemapURL string, baseURL string, perURLTimeout time.Duration) error {
 	resolvedSitemapURL, err := normalizeSitemapURL(sitemapURL)
 	if err != nil {
 		return err
@@ -102,11 +111,13 @@ func runScanFromSitemap(sitemapURL string, baseURL string, perURLTimeout time.Du
 		return err
 	}
 
-	return runScanWithConfig(siteConfig, resolvedSitemapURL, resolvedBaseURL, perURLTimeout)
+	return runScanWithConfig(ctx, siteConfig, resolvedSitemapURL, resolvedBaseURL, perURLTimeout)
 }
 
-func runScanWithConfig(siteConfig config.SiteConfig, sitemapURL string, baseURL string, perURLTimeout time.Duration) error {
-	ctx := context.Background()
+func runScanWithConfig(ctx context.Context, siteConfig config.SiteConfig, sitemapURL string, baseURL string, perURLTimeout time.Duration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	sitemapData, err := sitemap.Fetch(ctx, sitemapURL)
 	if err != nil {
 		return err
@@ -155,6 +166,9 @@ func runScanWithConfig(siteConfig config.SiteConfig, sitemapURL string, baseURL 
 
 	results, err := scanner.ScanURLsWithProgress(ctx, urls, 10, siteConfig.ExcludeRules, perURLTimeout, progressReporter)
 	if err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 

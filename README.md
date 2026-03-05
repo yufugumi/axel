@@ -14,7 +14,7 @@ WAXE is a Go-based accessibility scanner that uses [chromedp](https://github.com
 
 The `axed` CLI runs locally and writes HTML reports to your current working directory by default.
 
-While scans run, the CLI prints a single-line progress update with processed/total counts, percent, and current URL.
+While scans run, the CLI prints a single-line progress update with processed/total counts, percent, and current URL. Press Ctrl+C to cancel a scan.
 
 ```bash
 go test ./...
