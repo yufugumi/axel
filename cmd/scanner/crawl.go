@@ -15,6 +15,7 @@ import (
 	"github.com/yufugumi/waxe-go/internal/config"
 	"github.com/yufugumi/waxe-go/internal/scanner"
 	"github.com/yufugumi/waxe-go/internal/sitemap"
+	"github.com/yufugumi/waxe-go/internal/useragent"
 )
 
 const (
@@ -119,7 +120,9 @@ func discoverSitemapURLs(ctx context.Context, baseURL *url.URL) ([]string, error
 
 	robotsSitemaps, err := discoverRobotsSitemaps(ctx, robotsURL)
 	if err != nil {
-		log.Printf("warning: sitemap discovery robots.txt failed: %v", err)
+		if !strings.Contains(err.Error(), "HTTP 404") {
+			log.Printf("warning: sitemap discovery robots.txt failed: %v", err)
+		}
 	} else if len(robotsSitemaps) == 0 {
 		log.Printf("warning: no sitemap entries found in robots.txt")
 	}
@@ -157,7 +160,9 @@ func discoverSitemapURLs(ctx context.Context, baseURL *url.URL) ([]string, error
 		}
 		data, err := sitemap.Fetch(ctx, candidate)
 		if err != nil {
-			log.Printf("warning: sitemap fetch failed for %s: %v", candidate, err)
+			if !sitemap.IsNotFound(err) {
+				log.Printf("warning: sitemap fetch failed for %s: %v", candidate, err)
+			}
 			continue
 		}
 		urls, err := sitemap.Parse(data, log.Printf)
@@ -266,7 +271,9 @@ func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions) ([]s
 
 	robots, err := fetchRobotsRules(ctx, baseURL)
 	if err != nil {
-		log.Printf("warning: robots fetch failed for %s: %v", baseURL.String(), err)
+		if !strings.Contains(err.Error(), "HTTP 404") {
+			log.Printf("warning: robots fetch failed for %s: %v", baseURL.String(), err)
+		}
 	}
 	client := &http.Client{Timeout: 15 * time.Second}
 
@@ -308,6 +315,7 @@ func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions) ([]s
 			log.Printf("warning: crawl request failed for %s: %v", current.url.String(), err)
 			continue
 		}
+		req.Header.Set("User-Agent", useragent.CommonUserAgent)
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("warning: crawl fetch failed for %s: %v", current.url.String(), err)
@@ -512,6 +520,7 @@ func fetchURL(ctx context.Context, rawURL string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", useragent.CommonUserAgent)
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {

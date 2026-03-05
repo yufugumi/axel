@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/yufugumi/waxe-go/internal/useragent"
 )
 
 func TestParseSitemap(t *testing.T) {
@@ -141,6 +143,10 @@ func TestParseSitemapWarnsWithRawLocWhenSanitizedEmpty(t *testing.T) {
 func TestFetchSitemap(t *testing.T) {
 	// Create test server with valid sitemap XML
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("User-Agent") != useragent.CommonUserAgent {
+			http.Error(w, "unexpected user agent", http.StatusForbidden)
+			return
+		}
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>

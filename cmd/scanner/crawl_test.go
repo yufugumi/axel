@@ -204,9 +204,38 @@ func TestDiscoverSitemapURLsMergesAllCandidates(t *testing.T) {
 	}
 }
 
+func TestCrawlSiteSuppresses404RobotsWarning(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(`<html><body>Root</body></html>`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	parsed, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse base URL: %v", err)
+	}
+
+	logs := captureLogs(t)
+	_, err = crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 1, Delay: 0})
+	if err != nil {
+		t.Fatalf("crawl failed: %v", err)
+	}
+	if strings.Contains(logs.String(), "robots fetch failed") {
+		t.Fatalf("expected 404 robots warning to be suppressed, got %s", logs.String())
+	}
+}
+
 func TestCrawlSiteWarnsWhenRobotsFetchFails(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case "/robots.txt":
+			w.WriteHeader(http.StatusInternalServerError)
 		case "/":
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = w.Write([]byte(`<html><body>Root</body></html>`))

@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -21,6 +20,8 @@ import (
 	"github.com/yufugumi/waxe-go/internal/scanner"
 	"github.com/yufugumi/waxe-go/internal/sitemap"
 )
+
+var version = "dev"
 
 var nowFn = time.Now
 
@@ -33,11 +34,11 @@ func main() {
 	}
 }
 
-// NewRootCommand constructs the root CLI command for the scanner.
 func NewRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "axed",
-		Short: "Run WAXE accessibility scans",
+		Use:     "axed",
+		Short:   "Run WAXE accessibility scans",
+		Version: version,
 	}
 
 	rootCmd.AddCommand(newScanCommand())
@@ -61,7 +62,7 @@ func newScanCommand() *cobra.Command {
 		Short: "Scan a configured site",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 			defer stop()
 
 			var err error

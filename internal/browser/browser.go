@@ -2,10 +2,13 @@ package browser
 
 import (
 	"context"
+	"fmt"
 	"os"
 
+	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/yufugumi/waxe-go/internal/useragent"
 )
 
 func NewAllocator(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -34,6 +37,18 @@ func NewBrowser(ctx context.Context) (context.Context, context.CancelFunc) {
 		tabCancel()
 		allocCancel()
 	}
+}
+
+// NewBrowserContext creates a shared browser context from an allocator context
+// and ensures the browser process is started. All tabs created as children of
+// this context share the same browser process.
+func NewBrowserContext(allocCtx context.Context) (context.Context, context.CancelFunc, error) {
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	if err := chromedp.Run(ctx); err != nil {
+		cancel()
+		return nil, nil, fmt.Errorf("start browser: %w", err)
+	}
+	return ctx, cancel, nil
 }
 
 func Navigate(ctx context.Context, url string) error {
@@ -79,6 +94,7 @@ func BlockRequests(ctx context.Context, blockMedia bool) error {
 
 	return chromedp.Run(ctx,
 		network.Enable(),
+		emulation.SetUserAgentOverride(useragent.CommonUserAgent),
 		network.SetBlockedURLs(blocked),
 	)
 }

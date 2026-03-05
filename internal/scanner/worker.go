@@ -94,13 +94,19 @@ func ScanURLsWithOptions(ctx context.Context, urls []string, options ScanOptions
 	allocCtx, allocCancel := browser.NewAllocator(ctx)
 	defer allocCancel()
 
+	browserCtx, browserCancel, err := browser.NewBrowserContext(allocCtx)
+	if err != nil {
+		return nil, fmt.Errorf("ScanURLs: %w", err)
+	}
+	defer browserCancel()
+
 	for start := 0; start < len(urls); start += scanChunkSize {
 		end := start + scanChunkSize
 		if end > len(urls) {
 			end = len(urls)
 		}
 
-		if err := scanChunk(ctx, allocCtx, urls, start, end, options, results, progress); err != nil {
+		if err := scanChunk(ctx, browserCtx, urls, start, end, options, results, progress); err != nil {
 			return nil, err
 		}
 

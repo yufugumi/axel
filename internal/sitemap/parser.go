@@ -3,11 +3,14 @@ package sitemap
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"unicode"
+
+	"github.com/yufugumi/waxe-go/internal/useragent"
 )
 
 // urlset represents the root element of a sitemap XML
@@ -101,6 +104,22 @@ func truncateString(value string, maxLen int) string {
 	return value[:maxLen-3] + "..."
 }
 
+// HTTPError represents a non-OK HTTP response.
+type HTTPError struct {
+	StatusCode int
+	Status     string
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, e.Status)
+}
+
+// IsNotFound reports whether err is an HTTP 404 error.
+func IsNotFound(err error) bool {
+	var httpErr *HTTPError
+	return errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound
+}
+
 // Fetch retrieves a sitemap from a URL with context for timeout/cancellation
 func Fetch(ctx context.Context, url string) ([]byte, error) {
 	// Create request with context for timeout/cancellation
@@ -108,6 +127,7 @@ func Fetch(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", useragent.CommonUserAgent)
 
 	// Execute the HTTP request
 	resp, err := http.DefaultClient.Do(req)
@@ -118,7 +138,7 @@ func Fetch(ctx context.Context, url string) ([]byte, error) {
 
 	// Fail fast: check HTTP status code
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status}
 	}
 
 	// Read entire body
