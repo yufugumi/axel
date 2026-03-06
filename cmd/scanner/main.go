@@ -503,7 +503,7 @@ func newProgressPrinter(total int) (scanner.ProgressReporter, func()) {
 		if printer.lastLen > len(line) {
 			line = line + strings.Repeat(" ", printer.lastLen-len(line))
 		}
-		fmt.Fprintf(os.Stdout, "\r%s", line)
+		_, _ = fmt.Fprintf(os.Stdout, "\r%s", line)
 		printer.lastLen = len(line)
 	}
 
@@ -511,7 +511,7 @@ func newProgressPrinter(total int) (scanner.ProgressReporter, func()) {
 		if printer.lastLen == 0 {
 			return
 		}
-		fmt.Fprintln(os.Stdout)
+		_, _ = fmt.Fprintln(os.Stdout)
 		printer.lastLen = 0
 	}
 

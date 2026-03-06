@@ -1,4 +1,4 @@
-name: Create Release Tag
+name: Create tag
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   create-tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout target
         uses: actions/checkout@v6
@@ -65,7 +65,7 @@ jobs:
           git tag -a "$VERSION" -m "Release $VERSION"
           git push origin "refs/tags/$VERSION"
 
-      - name: Summarize result
+      - name: Summarise result
         env:
           VERSION: ${{ inputs.version }}
           TARGET: ${{ inputs.target }}
@@ -74,6 +74,4 @@ jobs:
           {
             echo "Created tag $VERSION from $TARGET."
             echo
-            echo "The Release workflow should now publish the GitHub release for $VERSION."
-            echo "https://github.com/$REPOSITORY/actions/workflows/release.yml"
           } >> "$GITHUB_STEP_SUMMARY"

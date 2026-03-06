@@ -49,13 +49,13 @@ func (p *crawlProgress) update(format string, args ...any) {
 	if p.lastLen > len(line) {
 		pad = strings.Repeat(" ", p.lastLen-len(line))
 	}
-	fmt.Fprintf(os.Stdout, "\r%s%s", line, pad)
+	_, _ = fmt.Fprintf(os.Stdout, "\r%s%s", line, pad)
 	p.lastLen = len(line)
 }
 
 func (p *crawlProgress) done() {
 	if p.lastLen > 0 {
-		fmt.Fprintln(os.Stdout)
+		_, _ = fmt.Fprintln(os.Stdout)
 		p.lastLen = 0
 	}
 }
@@ -576,7 +576,9 @@ func fetchURL(ctx context.Context, rawURL string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 	}
