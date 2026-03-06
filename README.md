@@ -1,6 +1,6 @@
 # Wellington Axe Runners (WAXE)
 
-WAXE is a Go-based accessibility scanner that uses [chromedp](https://github.com/chromedp/chromedp) with [axe-core](https://github.com/dequelabs/axe-core). It runs monthly via GitHub Actions against six Wellington Council sites and publishes HTML reports to GitHub Releases (no CSV output). The CLI runs locally and does not depend on GitHub Actions.
+WAXE is a Go-based accessibility scanner that uses [chromedp](https://github.com/chromedp/chromedp) with [axe-core](https://github.com/dequelabs/axe-core). It runs monthly via GitHub Actions against six Wellington City Council sites and publishes HTML reports to GitHub Releases. 
 
 ## Current behavior
 
@@ -104,12 +104,3 @@ go build -o axed ./cmd/scanner
 
 > [!NOTE]
 > `WAXE_SITEMAP_URL` is only used when `--site` is not provided. Use `--sitemap-url` to override the sitemap, or set `WAXE_ALLOW_SITEMAP_OVERRIDE=true` to opt into environment overrides while scanning a configured site.
-
-> [!NOTE]
-> This project is still a work in progress and has rough edges. It can scan other sites with axe-core, but it needs more configuration and polish to be broadly reusable.
-
-## Known issues
-
-- Some sites have slow or flaky pages that can still time out; enable retries if needed.
-- The HTML reports are useful but still need refinement for long-term analysis and comparison.
-- Runtime can be slow on large sitemaps even with concurrency.
