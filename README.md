@@ -1,4 +1,4 @@
-axel is a CLI accessibility (a11y) scanner that uses [chromedp](https://github.com/chromedp/chromedp) with [axe-core](https://github.com/dequelabs/axe-core) that finds common a11y issues and creates an HTML report based on its findings.
+**axel** is a CLI accessibility (a11y) scanner that uses [chromedp](https://github.com/chromedp/chromedp) with [axe-core](https://github.com/dequelabs/axe-core) that finds common a11y issues and creates an HTML report based on its findings.
 
 Create a standalone executable binary using `make build` that you can then use:
 
