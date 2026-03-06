@@ -1,4 +1,4 @@
-module github.com/yufugumi/waxe-go
+module github.com/yufugumi/axel
 
 go 1.26
 

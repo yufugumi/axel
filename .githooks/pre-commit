@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$staged_files" ]; then
+	exit 0
+fi
+
+go_related=false
+staged_go_files=""
+
+for file in $staged_files; do
+	case "$file" in
+		*.go)
+			go_related=true
+			staged_go_files="$staged_go_files $file"
+			;;
+		go.mod|go.sum)
+			go_related=true
+			;;
+	esac
+done
+
+if [ "$go_related" != "true" ]; then
+	exit 0
+fi
+
+if [ -n "$staged_go_files" ]; then
+	echo "Formatting staged Go files..."
+	# shellcheck disable=SC2086
+	gofmt -w $staged_go_files
+	# shellcheck disable=SC2086
+	git add $staged_go_files
+fi
+
+if ! command -v golangci-lint >/dev/null 2>&1; then
+	echo "golangci-lint is required for the pre-commit hook" >&2
+	echo "Install it from https://golangci-lint.run/welcome/install/" >&2
+	exit 1
+fi
+
+echo "Running golangci-lint..."
+golangci-lint run ./...
+
+echo "Running Go tests..."
+go test ./...

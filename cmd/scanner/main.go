@@ -15,9 +15,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/yufugumi/waxe-go/internal/reporter"
-	"github.com/yufugumi/waxe-go/internal/scanner"
-	"github.com/yufugumi/waxe-go/internal/sitemap"
+	"github.com/yufugumi/axel/internal/reporter"
+	"github.com/yufugumi/axel/internal/scanner"
+	"github.com/yufugumi/axel/internal/sitemap"
 )
 
 var version = "dev"

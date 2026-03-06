@@ -2,9 +2,9 @@
 set -e
 
 # Install script for axel (WAXE accessibility scanner)
-# Usage: curl -sSfL https://raw.githubusercontent.com/yufugumi/waxe-go/main/install.sh | sh
+# Usage: curl -sSfL https://raw.githubusercontent.com/yufugumi/axel/main/install.sh | sh
 
-REPO="github.com/yufugumi/waxe-go"
+REPO="github.com/yufugumi/axel"
 BINARY_NAME="axel"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
 
@@ -67,10 +67,10 @@ install_with_go() {
     trap 'rm -rf "$tmpdir"' EXIT
 
     printf "Cloning repository...\n"
-    git clone --depth 1 "https://${REPO}.git" "$tmpdir/waxe-go" 2>&1
+    git clone --depth 1 "https://${REPO}.git" "$tmpdir/axel" 2>&1
 
     printf "Building %s...\n" "$BINARY_NAME"
-    cd "$tmpdir/waxe-go"
+    cd "$tmpdir/axel"
     CGO_ENABLED=0 go build -o "$tmpdir/${BINARY_NAME}" ./cmd/scanner
 
     mkdir -p "$INSTALL_DIR"

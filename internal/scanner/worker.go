@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yufugumi/waxe-go/internal/browser"
+	"github.com/yufugumi/axel/internal/browser"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yufugumi/waxe-go/internal/scanner"
+	"github.com/yufugumi/axel/internal/scanner"
 )
 
 func TestGenerateReport(t *testing.T) {

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yufugumi/waxe-go/internal/scanner"
-	"github.com/yufugumi/waxe-go/internal/sitemap"
-	"github.com/yufugumi/waxe-go/internal/useragent"
+	"github.com/yufugumi/axel/internal/scanner"
+	"github.com/yufugumi/axel/internal/sitemap"
+	"github.com/yufugumi/axel/internal/useragent"
 )
 
 const (
@@ -535,9 +535,7 @@ func normalizeRobotsRule(rule string) string {
 	if idx := strings.Index(trimmed, "#"); idx >= 0 {
 		trimmed = strings.TrimSpace(trimmed[:idx])
 	}
-	if strings.HasSuffix(trimmed, "$") {
-		trimmed = strings.TrimSuffix(trimmed, "$")
-	}
+	trimmed = strings.TrimSuffix(trimmed, "$")
 	if idx := strings.Index(trimmed, "*"); idx >= 0 {
 		trimmed = trimmed[:idx]
 	}

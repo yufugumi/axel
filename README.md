@@ -39,3 +39,26 @@ Adjust chunk pacing for large sitemaps:
 ```bash
 ./axel scan https://example.com --chunk-delay 250ms --chunk-delay-max 2s
 ```
+
+## Development
+
+Install the repo-managed pre-commit hook:
+
+```bash
+make install-hooks
+```
+
+The hook will:
+
+- run `gofmt -w` on staged Go files and restage them
+- run `golangci-lint run ./...`
+- run `go test ./...`
+
+Useful local commands:
+
+```bash
+make fmt
+make lint
+make test
+make check
+```

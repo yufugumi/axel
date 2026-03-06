@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/yufugumi/waxe-go/internal/scanner"
+	"github.com/yufugumi/axel/internal/scanner"
 )
 
 // Generate creates an HTML accessibility report from scan results.

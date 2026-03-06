@@ -8,7 +8,7 @@ import (
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
-	"github.com/yufugumi/waxe-go/internal/useragent"
+	"github.com/yufugumi/axel/internal/useragent"
 )
 
 func NewAllocator(ctx context.Context) (context.Context, context.CancelFunc) {

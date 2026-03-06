@@ -1,8 +1,24 @@
 VERSION ?= dev
 LDFLAGS := -s -w -X main.version=$(VERSION)
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
+GO_FILES := $(shell git ls-files '*.go')
 
-.PHONY: build release clean
+.PHONY: build release clean fmt lint test check install-hooks
+
+fmt:
+	gofmt -w $(GO_FILES)
+
+lint:
+	golangci-lint run ./...
+
+test:
+	go test ./...
+
+check: lint test
+
+install-hooks:
+	git config core.hooksPath .githooks
+	chmod +x .githooks/pre-commit
 
 build:
 	go build -ldflags="$(LDFLAGS)" -o axel ./cmd/scanner

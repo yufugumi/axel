@@ -95,14 +95,17 @@ func TestScanURLsConcurrent(t *testing.T) {
 }
 
 func TestScanURLRetries(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	var requestCount int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempt := atomic.AddInt64(&requestCount, 1)
 		if attempt <= 2 {
-			w.WriteHeader(http.StatusInternalServerError)
+			time.Sleep(1500 * time.Millisecond)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("<html><body>slow</body></html>"))
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -114,7 +117,7 @@ func TestScanURLRetries(t *testing.T) {
 	urls := []string{server.URL}
 	results, err := ScanURLsWithOptions(ctx, urls, ScanOptions{
 		Workers:       1,
-		PerURLTimeout: DefaultPerURLTimeout,
+		PerURLTimeout: 1 * time.Second,
 		MaxRetries:    2,
 		RetryDelay:    10 * time.Millisecond,
 		ChunkDelay:    0,
@@ -127,6 +130,12 @@ func TestScanURLRetries(t *testing.T) {
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
+	if results[0] == nil {
+		t.Fatalf("expected non-nil result")
+	}
+	if results[0].Error != "" {
+		t.Fatalf("expected final retry to succeed, got %q", results[0].Error)
+	}
 
 	observedRequests := atomic.LoadInt64(&requestCount)
 	if observedRequests != 3 {
@@ -135,18 +144,21 @@ func TestScanURLRetries(t *testing.T) {
 }
 
 func TestScanURLsDefaultsToNoRetries(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var requestCount int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt64(&requestCount, 1)
-		w.WriteHeader(http.StatusInternalServerError)
+		time.Sleep(1500 * time.Millisecond)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("<html><body>slow</body></html>"))
 	}))
 	defer server.Close()
 
 	urls := []string{server.URL}
-	results, err := ScanURLs(ctx, urls, 1, nil, DefaultPerURLTimeout)
+	results, err := ScanURLs(ctx, urls, 1, nil, 1*time.Second)
 	if err != nil {
 		t.Fatalf("expected no package-level error when no retries are configured, got %v", err)
 	}

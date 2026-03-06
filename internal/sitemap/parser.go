@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/yufugumi/waxe-go/internal/useragent"
+	"github.com/yufugumi/axel/internal/useragent"
 )
 
 // urlset represents the root element of a sitemap XML

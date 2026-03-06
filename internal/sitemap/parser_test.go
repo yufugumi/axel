@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yufugumi/waxe-go/internal/useragent"
+	"github.com/yufugumi/axel/internal/useragent"
 )
 
 func TestParseSitemap(t *testing.T) {
@@ -149,7 +149,7 @@ func TestFetchSitemap(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://example.com/</loc></url>
 </urlset>`))
@@ -174,7 +174,7 @@ func TestFetchSitemapWithTimeout(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://example.com/</loc></url>
 </urlset>`))

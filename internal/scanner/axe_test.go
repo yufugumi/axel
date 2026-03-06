@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/chromedp/chromedp"
-	"github.com/yufugumi/waxe-go/internal/browser"
+	"github.com/yufugumi/axel/internal/browser"
 )
 
 func TestInjectAxeCore(t *testing.T) {

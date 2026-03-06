@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yufugumi/waxe-go/internal/browser"
+	"github.com/yufugumi/axel/internal/browser"
 )
 
 func TestExecuteAxe(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yufugumi/waxe-go/internal/useragent"
+	"github.com/yufugumi/axel/internal/useragent"
 )
 
 func TestNewBrowser(t *testing.T) {
