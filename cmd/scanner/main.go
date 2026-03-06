@@ -217,6 +217,17 @@ func runScanWithURLs(ctx context.Context, siteConfig config.SiteConfig, urls []s
 		return err
 	}
 
+	var failedCount int
+	for _, r := range results {
+		if r != nil && r.Error != "" {
+			failedCount++
+			log.Printf("warning: %s: %s", r.URL, r.Error)
+		}
+	}
+	if failedCount > 0 {
+		log.Printf("warning: %d/%d URLs failed and were skipped", failedCount, len(results))
+	}
+
 	date := nowFn().Format("2006-01-02")
 	report, err := reporter.Generate(results, siteConfig.TestName, date)
 	if err != nil {

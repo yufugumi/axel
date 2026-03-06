@@ -299,9 +299,9 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 				return nil, ctx.Err()
 			}
 			if attemptCtx.Err() != nil {
-				lastErr = fmt.Errorf("ScanURLs: navigate: %w", attemptCtx.Err())
+				lastErr = fmt.Errorf("navigate: %w", attemptCtx.Err())
 			} else {
-				lastErr = fmt.Errorf("ScanURLs: navigate: %w", err)
+				lastErr = fmt.Errorf("navigate: %w", err)
 			}
 			if attempt < maxAttempts-1 {
 				if err := sleepWithContext(ctx, options.RetryDelay); err != nil {
@@ -309,7 +309,7 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 				}
 				continue
 			}
-			return nil, lastErr
+			return &ScanResult{URL: url, Timestamp: time.Now(), Error: lastErr.Error()}, nil
 		}
 
 		if err := InjectAxeCore(attemptCtx); err != nil {
@@ -318,9 +318,9 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 				return nil, ctx.Err()
 			}
 			if attemptCtx.Err() != nil {
-				lastErr = fmt.Errorf("ScanURLs: inject axe: %w", attemptCtx.Err())
+				lastErr = fmt.Errorf("inject axe: %w", attemptCtx.Err())
 			} else {
-				lastErr = fmt.Errorf("ScanURLs: inject axe: %w", err)
+				lastErr = fmt.Errorf("inject axe: %w", err)
 			}
 			if attempt < maxAttempts-1 {
 				if err := sleepWithContext(ctx, options.RetryDelay); err != nil {
@@ -328,7 +328,7 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 				}
 				continue
 			}
-			return nil, lastErr
+			return &ScanResult{URL: url, Timestamp: time.Now(), Error: lastErr.Error()}, nil
 		}
 
 		violations, err := ExecuteAxe(attemptCtx, options.ExcludeRules)
@@ -338,9 +338,9 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 				return nil, ctx.Err()
 			}
 			if attemptCtx.Err() != nil {
-				lastErr = fmt.Errorf("ScanURLs: execute axe: %w", attemptCtx.Err())
+				lastErr = fmt.Errorf("execute axe: %w", attemptCtx.Err())
 			} else {
-				lastErr = fmt.Errorf("ScanURLs: execute axe: %w", err)
+				lastErr = fmt.Errorf("execute axe: %w", err)
 			}
 			if attempt < maxAttempts-1 {
 				if err := sleepWithContext(ctx, options.RetryDelay); err != nil {
@@ -348,7 +348,7 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 				}
 				continue
 			}
-			return nil, lastErr
+			return &ScanResult{URL: url, Timestamp: time.Now(), Error: lastErr.Error()}, nil
 		}
 
 		result := &ScanResult{
@@ -361,9 +361,9 @@ func scanURL(ctx context.Context, allocCtx context.Context, url string, options 
 	}
 
 	if lastErr == nil {
-		return nil, fmt.Errorf("ScanURLs: retries exhausted")
+		lastErr = fmt.Errorf("retries exhausted")
 	}
-	return nil, lastErr
+	return &ScanResult{URL: url, Timestamp: time.Now(), Error: lastErr.Error()}, nil
 }
 
 func calculateChunkDelay(base time.Duration, max time.Duration, chunkIndex int) time.Duration {

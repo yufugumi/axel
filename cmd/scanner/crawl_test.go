@@ -40,7 +40,7 @@ func TestDiscoverSitemapURLsFromRobots(t *testing.T) {
 		t.Fatalf("parse base URL: %v", err)
 	}
 
-	urls, err := discoverSitemapURLs(context.Background(), parsed)
+	urls, err := discoverSitemapURLs(context.Background(), parsed, nil)
 	if err != nil {
 		t.Fatalf("discover sitemaps: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestDiscoverSitemapURLsDefaultsWhenRobotsMissing(t *testing.T) {
 		t.Fatalf("parse base URL: %v", err)
 	}
 
-	urls, err := discoverSitemapURLs(context.Background(), parsed)
+	urls, err := discoverSitemapURLs(context.Background(), parsed, nil)
 	if err != nil {
 		t.Fatalf("discover sitemaps: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestCrawlSiteRespectsRobotsAndHTML(t *testing.T) {
 		t.Fatalf("parse base URL: %v", err)
 	}
 
-	urls, err := crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 3, Delay: 0})
+	urls, err := crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 3, Delay: 0}, nil)
 	if err != nil {
 		t.Fatalf("crawl failed: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestDiscoverSitemapURLsMergesAllCandidates(t *testing.T) {
 		t.Fatalf("parse base URL: %v", err)
 	}
 
-	urls, err := discoverSitemapURLs(context.Background(), parsed)
+	urls, err := discoverSitemapURLs(context.Background(), parsed, nil)
 	if err != nil {
 		t.Fatalf("discover sitemaps: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestCrawlSiteSuppresses404RobotsWarning(t *testing.T) {
 	}
 
 	logs := captureLogs(t)
-	_, err = crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 1, Delay: 0})
+	_, err = crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 1, Delay: 0}, nil)
 	if err != nil {
 		t.Fatalf("crawl failed: %v", err)
 	}
@@ -251,12 +251,51 @@ func TestCrawlSiteWarnsWhenRobotsFetchFails(t *testing.T) {
 	}
 
 	logs := captureLogs(t)
-	_, err = crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 1, Delay: 0})
+	_, err = crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 1, Delay: 0}, nil)
 	if err != nil {
 		t.Fatalf("crawl failed: %v", err)
 	}
 	if !strings.Contains(logs.String(), "robots fetch failed") {
 		t.Fatalf("expected robots fetch warning, got %s", logs.String())
+	}
+}
+
+func TestCrawlSiteIgnoresBlockAllRobots(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/robots.txt":
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("User-agent: *\nDisallow: /\n"))
+		case "/":
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(`<html><body><a href="/page">Page</a></body></html>`))
+		case "/page":
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(`<html><body>Page</body></html>`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	parsed, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("parse base URL: %v", err)
+	}
+
+	logs := captureLogs(t)
+	urls, err := crawlSite(context.Background(), parsed, crawlOptions{MaxDepth: 2, Delay: 0}, nil)
+	if err != nil {
+		t.Fatalf("crawl failed: %v", err)
+	}
+	if !strings.Contains(logs.String(), "robots.txt blocks all paths") {
+		t.Fatalf("expected block-all warning, got %s", logs.String())
+	}
+	if !containsURL(urls, server.URL+"/") {
+		t.Fatalf("expected root URL in results despite robots block-all")
+	}
+	if !containsURL(urls, server.URL+"/page") {
+		t.Fatalf("expected /page in results despite robots block-all")
 	}
 }
 

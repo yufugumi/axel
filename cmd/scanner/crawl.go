@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -39,17 +40,41 @@ type robotsRules struct {
 	disallow []string
 }
 
+type crawlProgress struct {
+	lastLen int
+}
+
+func (p *crawlProgress) update(format string, args ...any) {
+	line := fmt.Sprintf(format, args...)
+	pad := ""
+	if p.lastLen > len(line) {
+		pad = strings.Repeat(" ", p.lastLen-len(line))
+	}
+	fmt.Fprintf(os.Stdout, "\r%s%s", line, pad)
+	p.lastLen = len(line)
+}
+
+func (p *crawlProgress) done() {
+	if p.lastLen > 0 {
+		fmt.Fprintln(os.Stdout)
+		p.lastLen = 0
+	}
+}
+
 func runScanFromBaseURL(ctx context.Context, rawBaseURL string, options scanner.ScanOptions) error {
 	base, err := normalizeBaseURL(rawBaseURL)
 	if err != nil {
 		return err
 	}
 
-	sitemapURLs, err := discoverSitemapURLs(ctx, base)
+	progress := &crawlProgress{}
+	sitemapURLs, err := discoverSitemapURLs(ctx, base, progress)
 	if err != nil {
+		progress.done()
 		return err
 	}
 	if len(sitemapURLs) > 0 {
+		progress.done()
 		finalURLs, err := finalizeURLs(sitemapURLs, "sitemap discovery")
 		if err != nil {
 			return err
@@ -66,7 +91,8 @@ func runScanFromBaseURL(ctx context.Context, rawBaseURL string, options scanner.
 		MaxDepth: defaultCrawlDepth,
 		Delay:    defaultCrawlDelay,
 		MaxURLs:  maxURLs,
-	})
+	}, progress)
+	progress.done()
 	if err != nil {
 		return err
 	}
@@ -106,7 +132,7 @@ func normalizeBaseURL(raw string) (*url.URL, error) {
 	return withScheme, nil
 }
 
-func discoverSitemapURLs(ctx context.Context, baseURL *url.URL) ([]string, error) {
+func discoverSitemapURLs(ctx context.Context, baseURL *url.URL, progress *crawlProgress) ([]string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -154,9 +180,12 @@ func discoverSitemapURLs(ctx context.Context, baseURL *url.URL) ([]string, error
 
 	merged := make([]string, 0)
 	seenURLs := make(map[string]struct{})
-	for _, candidate := range candidates {
+	for i, candidate := range candidates {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if progress != nil {
+			progress.update("Discovering: checking sitemap %d/%d...", i+1, len(candidates))
 		}
 		data, err := sitemap.Fetch(ctx, candidate)
 		if err != nil {
@@ -250,7 +279,7 @@ func parseRobotsSitemaps(body string, robotsURL *url.URL) []string {
 	return entries
 }
 
-func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions) ([]string, error) {
+func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions, progress *crawlProgress) ([]string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -274,6 +303,10 @@ func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions) ([]s
 		if !strings.Contains(err.Error(), "HTTP 404") {
 			log.Printf("warning: robots fetch failed for %s: %v", baseURL.String(), err)
 		}
+	}
+	if robots.blocksAll() {
+		log.Printf("warning: robots.txt blocks all paths for User-agent: *; ignoring for accessibility scan")
+		robots = robotsRules{}
 	}
 	client := &http.Client{Timeout: 15 * time.Second}
 
@@ -342,6 +375,9 @@ func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions) ([]s
 				continue
 			}
 			results = append(results, current.url.String())
+			if progress != nil {
+				progress.update("Crawling: %d URLs found (depth %d/%d)", len(results), current.depth, options.MaxDepth)
+			}
 			if current.depth >= options.MaxDepth {
 				continue
 			}
@@ -364,6 +400,9 @@ func crawlSite(ctx context.Context, baseURL *url.URL, options crawlOptions) ([]s
 		}
 
 		results = append(results, current.url.String())
+		if progress != nil {
+			progress.update("Crawling: %d URLs found (depth %d/%d)", len(results), current.depth, options.MaxDepth)
+		}
 		if current.depth >= options.MaxDepth {
 			_ = resp.Body.Close()
 			continue
@@ -458,6 +497,20 @@ func (rules robotsRules) allows(path string) bool {
 		return true
 	}
 	return allowLen >= disallowLen
+}
+
+func (rules robotsRules) blocksAll() bool {
+	for _, rule := range rules.disallow {
+		if rule == "/" {
+			for _, allow := range rules.allow {
+				if allow != "" {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
 }
 
 func longestMatch(path string, rules []string) int {
